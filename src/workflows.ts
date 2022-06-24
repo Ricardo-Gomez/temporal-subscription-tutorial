@@ -1,12 +1,25 @@
-import { proxyActivities } from '@temporalio/workflow';
-// Only import the activity types
+import * as wf from '@temporalio/workflow'; // don't need to import everything
 import type * as activities from './activities';
+// import activity types
 
-const { greet } = proxyActivities<typeof activities>({
+const acts = wf.proxyActivities<typeof activities>({
+  // don't need to destructure activities
   startToCloseTimeout: '1 minute',
 });
 
-/** A workflow that simply calls an activity */
-export async function example(name: string): Promise<string> {
-  return await greet(name);
+export const cancelSubscription = wf.defineSignal('cancelSignal'); // new
+
+export async function SubscriptionWorkflow(
+  email: string,
+  trialPeriod: string | number
+) {
+  let isCanceled = false; // internal variable to track cancel state
+  wf.setHandler(cancelSubscription, () => void (isCanceled = true)); // new
+  await acts.sendWelcomeEmail(email);
+  await wf.sleep(trialPeriod);
+  if (isCanceled) {
+    await acts.sendCancellationEmailDuringTrialPeriod(email); // new
+  } else {
+    await acts.sendSubscriptionOverEmail(email);
+  }
 }

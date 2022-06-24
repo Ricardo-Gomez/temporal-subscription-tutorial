@@ -1,5 +1,5 @@
 import { Connection, WorkflowClient } from '@temporalio/client';
-import { example } from './workflows';
+import { SubscriptionWorkflow } from './workflows';
 import { nanoid } from 'nanoid';
 
 async function run() {
@@ -15,16 +15,11 @@ async function run() {
     // namespace: 'default', // change if you have a different namespace
   });
 
-  const handle = await client.start(example, {
-    args: ['Temporal'], // type inference works! args: [name: string]
-    taskQueue: 'hello-world',
-    // in practice, use a meaningful business id, eg customerId or transactionId
-    workflowId: 'workflow-' + nanoid(),
+  const result = await client.execute(SubscriptionWorkflow, {
+    workflowId: 'business-meaningful-id',
+    taskQueue: 'tutorial',
+    args: ['foo@bar.com', '30 seconds'],
   });
-  console.log(`Started workflow ${handle.workflowId}`);
-
-  // optional: wait for client result
-  console.log(await handle.result()); // Hello, Temporal!
 }
 
 run().catch((err) => {
